@@ -21,65 +21,122 @@ export default async function handler(req, res) {
     const results = await Promise.all(tasks);
     res.status(200).json(results);
   } catch (e) {
-    console.error(e);
+    console.error("Global error:", e);
     res.status(500).json({ error: "Server error" });
   }
 }
 
+// GitHub Models – ChatGPT / Copilot / Claude
 async function callGitHub(provider, model, prompt) {
-  const res = await fetch("https://models.github.ai/inference/chat/completions", {
-    method: "POST",
-    headers: {
-      "Accept": "application/vnd.github+json",
-      "Authorization": `Bearer ${process.env.GITHUB_PAT}`,
-      "X-GitHub-Api-Version": "2022-11-28",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-
-  const data = await res.json();
-  const answer = data.choices?.[0]?.message?.content || "";
-
-  return { provider, model, answer };
-}
-
-async function callGemini(prompt) {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-    {
+  try {
+    const res = await fetch("https://models.github.ai/inference/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Accept": "application/vnd.github+json",
+        "Authorization": `Bearer ${process.env.GITHUB_PAT}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        model,
+        messages: [{ role: "user", content: prompt }],
       }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error("GitHub error for", provider, data);
+      return {
+        provider,
+        model,
+        answer: `שגיאה במודל ${provider}: ${JSON.stringify(data)}`,
+      };
     }
-  );
 
-  const data = await res.json();
-  const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-  return { provider: "gemini", model: "gemini-1.5-flash", answer };
+    const answer = data.choices?.[0]?.message?.content || "";
+    return { provider, model, answer };
+  } catch (e) {
+    console.error("GitHub exception for", provider, e);
+    return {
+      provider,
+      model,
+      answer: `שגיאה במודל ${provider} (חריג)`,
+    };
+  }
 }
 
+// Gemini
+async function callGemini(prompt) {
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error("Gemini error:", data);
+      return {
+        provider: "gemini",
+        model: "gemini-1.5-flash",
+        answer: `שגיאה במודל gemini: ${JSON.stringify(data)}`,
+      };
+    }
+
+    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    return { provider: "gemini", model: "gemini-1.5-flash", answer };
+  } catch (e) {
+    console.error("Gemini exception:", e);
+    return {
+      provider: "gemini",
+      model: "gemini-1.5-flash",
+      answer: "שגיאה במודל gemini (חריג)",
+    };
+  }
+}
+
+// Groq – Grok-like
 async function callGroq(provider, model, prompt) {
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  try {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error("Groq error:", data);
+      return {
+        provider,
+        model,
+        answer: `שגיאה במודל ${provider}: ${JSON.stringify(data)}`,
+      };
+    }
+
+    const answer = data.choices?.[0]?.message?.content || "";
+    return { provider, model, answer };
+  } catch (e) {
+    console.error("Groq exception:", e);
+    return {
+      provider,
       model,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-
-  const data = await res.json();
-  const answer = data.choices?.[0]?.message?.content || "";
-
-  return { provider, model, answer };
+      answer: `שגיאה במודל ${provider} (חריג)`,
+    };
+  }
 }
