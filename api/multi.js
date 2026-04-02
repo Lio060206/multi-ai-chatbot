@@ -10,12 +10,19 @@ export default async function handler(req, res) {
 
   try {
     const tasks = [
-      callOR("chatgpt", "openai/gpt-4.1-mini", prompt),
-      callOR("claude", "anthropic/claude-3.5-sonnet", prompt),
-      callOR("gemini", "google/gemini-1.5-flash", prompt),
-      callOR("deepseek", "deepseek/deepseek-chat", prompt),
-      callOR("llama", "meta-llama/llama-3.1-8b-instruct", prompt),
-      callOR("grok", "x-ai/grok-beta", prompt),
+      callGitHub("chatgpt", "openai/gpt-4.1-mini", prompt),
+      callGitHub("copilot", "openai/gpt-4o-mini", prompt),
+
+      // Groq models
+      callGroq("llama8b", "llama-3.1-8b-instant", prompt),
+      callGroq("llama70b", "llama-3.1-70b-versatile", prompt),
+      callGroq("mixtral", "mixtral-8x7b", prompt),
+      callGroq("deepseek", "deepseek-r1-distill-llama-70b", prompt),
+      callGroq("gemma", "gemma-2-9b", prompt),
+
+      // Perplexity
+      callPPLX("pplx7b", "pplx-7b-online", prompt),
+      callPPLX("pplx70b", "pplx-70b-online", prompt),
     ];
 
     const results = await Promise.all(tasks);
@@ -27,14 +34,16 @@ export default async function handler(req, res) {
 }
 
 /* -----------------------------
-   OpenRouter – כל המודלים
+   GitHub Models
 ------------------------------ */
-async function callOR(provider, model, prompt) {
+async function callGitHub(provider, model, prompt) {
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const res = await fetch("https://models.github.ai/inference/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Accept": "application/vnd.github+json",
+        "Authorization": `Bearer ${process.env.GITHUB_PAT}`,
+        "X-GitHub-Api-Version": "2022-11-28",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -44,24 +53,59 @@ async function callOR(provider, model, prompt) {
     });
 
     const data = await res.json();
-
-    if (!res.ok) {
-      console.error("OpenRouter error for", provider, data);
-      return {
-        provider,
-        model,
-        answer: `שגיאה במודל ${provider}: ${JSON.stringify(data)}`,
-      };
-    }
-
-    const answer = data.choices?.[0]?.message?.content || "";
+    const answer = data.choices?.[0]?.message?.content || JSON.stringify(data);
     return { provider, model, answer };
   } catch (e) {
-    console.error("OpenRouter exception for", provider, e);
-    return {
-      provider,
-      model,
-      answer: `שגיאה במודל ${provider} (חריג)`,
-    };
+    return { provider, model, answer: "שגיאה במודל GitHub" };
+  }
+}
+
+/* -----------------------------
+   Groq
+------------------------------ */
+async function callGroq(provider, model, prompt) {
+  try {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    const data = await res.json();
+    const answer = data.choices?.[0]?.message?.content || JSON.stringify(data);
+    return { provider, model, answer };
+  } catch (e) {
+    return { provider, model, answer: "שגיאה במודל Groq" };
+  }
+}
+
+/* -----------------------------
+   Perplexity
+------------------------------ */
+async function callPPLX(provider, model, prompt) {
+  try {
+    const res = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.PPLX_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    const data = await res.json();
+    const answer = data.choices?.[0]?.message?.content || JSON.stringify(data);
+    return { provider, model, answer };
+  } catch (e) {
+    return { provider, model, answer: "שגיאה במודל Perplexity" };
   }
 }
