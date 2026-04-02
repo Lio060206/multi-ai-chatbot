@@ -15,8 +15,6 @@
 </head>
 <body>
   <h1>Multi‑AI Chat</h1>
-  <p>כתוב פרומפט, והאתר ישלח אותו לכמה מודלים במקביל.</p>
-
   <textarea id="prompt" placeholder="כתוב כאן את הפרומפט שלך..."></textarea>
   <br />
   <button onclick="send()">שלח</button>
@@ -31,11 +29,11 @@
       const answersDiv = document.getElementById("answers");
 
       if (!prompt) {
-        alert("תכתוב משהו קודם :)");
+        alert("תכתוב משהו קודם");
         return;
       }
 
-      status.textContent = "שולח למודלים... מחכה לתשובות...";
+      status.textContent = "שולח למודלים...";
       answersDiv.innerHTML = "";
 
       try {
@@ -48,25 +46,18 @@
         const data = await res.json();
         status.textContent = "";
 
-        if (!Array.isArray(data)) {
-          answersDiv.innerHTML = `<div class="answer error">שגיאה בשרת: ${JSON.stringify(data)}</div>`;
-          return;
-        }
-
         data.forEach(a => {
           const div = document.createElement("div");
           div.className = "answer";
-          const safeAnswer = (a.answer || "").replace(/\n/g, "<br>");
           div.innerHTML = `
             <div class="provider">${a.provider.toUpperCase()} (${a.model})</div>
-            <div>${safeAnswer}</div>
+            <div>${(a.answer || "").replace(/\n/g, "<br>")}</div>
           `;
           answersDiv.appendChild(div);
         });
       } catch (e) {
-        console.error(e);
         status.textContent = "";
-        answersDiv.innerHTML = `<div class="answer error">שגיאה כללית בקריאה לשרת</div>`;
+        answersDiv.innerHTML = `<div class="answer error">שגיאה כללית</div>`;
       }
     }
   </script>
