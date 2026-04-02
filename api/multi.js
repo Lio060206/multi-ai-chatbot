@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     const tasks = [
       callGitHub("chatgpt", "openai/gpt-4.1-mini", prompt),
       callGitHub("copilot", "openai/gpt-4.1-mini", prompt),
-      callGitHub("claude", "anthropic/claude-3.5-sonnet", prompt),
+      callGitHub("claude", "anthropic/claude-3-5-sonnet", prompt),
       callGemini(prompt),
       callGroq("grok_like", "llama-3.1-8b-instant", prompt),
     ];
@@ -26,7 +26,9 @@ export default async function handler(req, res) {
   }
 }
 
-// GitHub Models – ChatGPT / Copilot / Claude
+/* -----------------------------
+   GitHub Models (ChatGPT / Copilot / Claude)
+------------------------------ */
 async function callGitHub(provider, model, prompt) {
   try {
     const res = await fetch("https://models.github.ai/inference/chat/completions", {
@@ -66,11 +68,13 @@ async function callGitHub(provider, model, prompt) {
   }
 }
 
-// Gemini
+/* -----------------------------
+   Gemini (Google AI Studio)
+------------------------------ */
 async function callGemini(prompt) {
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,7 +107,9 @@ async function callGemini(prompt) {
   }
 }
 
-// Groq – Grok-like
+/* -----------------------------
+   Groq (Grok-like)
+------------------------------ */
 async function callGroq(provider, model, prompt) {
   try {
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
