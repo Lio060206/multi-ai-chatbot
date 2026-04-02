@@ -13,8 +13,8 @@ export default async function handler(req, res) {
     const tasks = [
       callGitHub("chatgpt", "openai/gpt-4.1-mini", prompt),
       callGitHub("copilot", "openai/gpt-4.1-mini", prompt),
-      callGitHub("claude", "anthropic/claude-3-5-sonnet", prompt),
-      callGemini(prompt),
+      callGitHub("claude", "anthropic/claude-3-sonnet", prompt),   // ← מודל קיים
+      callGemini(prompt),                                           // ← מודל קיים
       callGroq("grok_like", "llama-3.1-8b-instant", prompt),
     ];
 
@@ -74,7 +74,7 @@ async function callGitHub(provider, model, prompt) {
 async function callGemini(prompt) {
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.0-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,18 +90,18 @@ async function callGemini(prompt) {
       console.error("Gemini error:", data);
       return {
         provider: "gemini",
-        model: "gemini-1.5-flash",
+        model: "gemini-1.0-pro",
         answer: `שגיאה במודל gemini: ${JSON.stringify(data)}`,
       };
     }
 
     const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    return { provider: "gemini", model: "gemini-1.5-flash", answer };
+    return { provider: "gemini", model: "gemini-1.0-pro", answer };
   } catch (e) {
     console.error("Gemini exception:", e);
     return {
       provider: "gemini",
-      model: "gemini-1.5-flash",
+      model: "gemini-1.0-pro",
       answer: "שגיאה במודל gemini (חריג)",
     };
   }
